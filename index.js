@@ -1,77 +1,167 @@
 //install packages
-const mysql = require ('mysql2');
-const inquire = require('inquirer');
-const cTable = require('console.table');
+const mysql = require("mysql2");
+const inquire = require("inquirer");
+const cTable = require("console.table");
 // const MaxLengthInputPrompt = require("inquirer-maxlength-input-prompt");
 // inquirer.registerPrompt("maxlength-input", MaxLengthInputPrompt);
 
 //connecteing database
 const db = mysql.createConnection(
-    {
-        host: 'localhost',
-        user: 'root',
-        password: 'hiro1108',
-        database: 'employees_db'
-    },
-    console.log(`conndected to the employees_db`)
+  {
+    host: "localhost",
+    user: "root",
+    password: "hiro1108",
+    database: "employees_db",
+  },
+  console.log(`conndected to the employees_db`)
 );
 
+const sqlShowing = ({ query }) => {
+  let queryText;
+  switch (query) {
+    case "View All Departments":
+      queryText = `SELECT * FROM department`;
+      break;
 
-const sqlShowing = ({
-    query,
-}) => {
-    let queryText;
-    switch(query){
-        case "View All Departments":
-            queryText = `SELECT * FROM department`;
-            break;
-            
-        case "View All Roles":
-            queryText = `SELECT role.id, role.title, department.name, role.salary FROM role INNER JOIN department ON department.id = role.department_id`;
-            break;
-            
-        case "View All Employees":
-            queryText = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name," ",m.last_name) AS manager FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee m ON m.id = employee.manager_id;`;      
-            break;
-        case "Quit":
-            queryText = ``;
-            break;
-        default:
-            queryText = "";  
+    case "View All Roles":
+      queryText = `SELECT role.id, role.title, department.name, role.salary FROM role INNER JOIN department ON department.id = role.department_id`;
+      break;
 
-    }
-    return queryText;
+    case "View All Employees":
+      queryText = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name," ",m.last_name) AS manager FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee m ON m.id = employee.manager_id;`;
+      break;
+    case "Add a Department":
+        queryText = `addD`;
+        break;
+    case "Add a Role":
+        queryText =`addR`;
+        break;
+    case "Add an Employee":
+        queryText =`addE`;
+        break;
+    case "Quit":
+      console.log("Exiting the program....");
+      process.exit();
+      break;
+    default:
+      queryText = "";
+  }
+  return queryText;
+};
+
+function promptUser() {
+  inquire
+    .prompt([
+      {
+        type: "list",
+        name: "query",
+        message: "What would you like to do?",
+        choices: [
+          "View All Departments",
+          "View All Roles",
+          "View All Employees",
+          "Add a Department",
+          "Add a Role",
+          "Add an Employee",
+          "Quit",
+        ],
+      },
+    ])
+    .then((res) => {
+      const content = sqlShowing(res);
+
+      if (
+        content === "SELECT * FROM department" ||
+        content ===
+          "SELECT role.id, role.title, department.name, role.salary FROM role INNER JOIN department ON department.id = role.department_id" ||
+        content ===
+          'SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name," ",m.last_name) AS manager FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee m ON m.id = employee.manager_id;'
+      ) {
+        db.query(content, (err, result) => {
+          if (result) {
+            console.log("");
+            console.table(result);
+            promptUser(); // Recursive call to ask the question again
+          } else {
+            console.error(err);
+          }
+        });
+      } else if (content == "addD") {
+        const newDepartment = ()=>
+        inquire.prompt({
+            name: "department",
+            type: "input",
+            message: "What is the name of department?"
+        })
+        .then((res)=>{
+            const param = newDepartment(res);
+            db.query(`INSERT INTO department (name) VALUES (?)`, [param.department] ,(err,res) =>{
+                if (res){
+                    console.log('Succesfully Added!');
+                    promptUser();
+                }else{
+                    console.error(err);
+                    promptUser();
+                }
+            } )
+        })
+        console.log("addD");
+        promptUser(); // Recursive call to ask the question again
+      } else if (content == "addR"){
+        console.log("addR");
+        promptUser(); // Recursive call to ask the question again
+      }else if(content == "addE"){
+        console.log("addE");
+        promptUser();
+      }else{
+        console.log('Other logic');
+        promptUser(); 
+      }
+    });
 }
 
+promptUser(); // Initial call to start the prompt
 
-    inquire.prompt(
-        [
-            {
-                type: "list",
-                name: "query",
-                choices: [
-                   "View All Departments",
-                   "View All Roles",
-                   "View All Employees",
-                   "Quit",
-                ],
-            },
-        ],
-     )
-.then((res) =>{
-    const content = sqlShowing(res);
+//     inquire.prompt(
+//         [
+//             {
+//                 type: "list",
+//                 name: "query",
+//                 message: "What would you like to do?",
+//                 choices: [
+//                    "View All Departments",
+//                    "View All Roles",
+//                    "View All Employees",
+//                    "Quit",
+//                 ],
+//             },
+//         ],
+//      )
+// .then((res) =>{
+//     const content = sqlShowing(res);
 
-    db.query(content, (err, result) =>{
-        if (result){
-            console.log('')
-            console.table(result);
-        } else {
-            console.error(err)
-        }
-    });
- })
+//     if(content === 'SELECT * FROM department' || 'SELECT role.id, role.title, department.name, role.salary FROM role INNER JOIN department ON department.id = role.department_id' || 'SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name," ",m.last_name) AS manager FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee m ON m.id = employee.manager_id;'){
+//         db.query(content, (err, result) =>{
+//             if (result){
+//                 console.log('')
+//                 console.table(result);
+//                 promptUser();
+//             } else {
+//                 console.error(err)
+//             }
+//         });
+//     }else {console.log('done')}
 
-
+// db.query(content, (err, result) =>{
+//     if (result){
+//         console.log('')
+//         console.table(result);
+//         return inquire;
+//     } else {
+//         console.error(err)
+//     }
+// });
+//  })
 
 //reading eachtables
 //showing depeartment table
@@ -107,4 +197,3 @@ const sqlShowing = ({
 //         console.error(err)
 //     }
 // })
-
