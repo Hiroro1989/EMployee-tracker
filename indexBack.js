@@ -3,8 +3,8 @@ const mysql = require("mysql2");
 const inquire = require("inquirer");
 const cTable = require("console.table");
 // const Connection = require("mysql2/typings/mysql/lib/Connection");
-// const MaxLengthInputPrompt = require("inquirer-maxlength-input-prompt");
-// inquirer.registerPrompt("maxlength-input", MaxLengthInputPrompt);
+const MaxLengthInputPrompt = require("inquirer-maxlength-input-prompt");
+inquirer.registerPrompt("maxlength-input", MaxLengthInputPrompt);
 
 //connecteing database
 const db = mysql.createConnection(
@@ -213,3 +213,66 @@ promptUser();
 //         console.error(err)
 //     }
 // })
+
+const updateSqlRL = () => {
+  db.query(`SELECT * FROM employee`, (err, employees) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+
+    const employeeChoices = employees.map((employee) => {
+      return {
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id,
+      };
+    });
+
+    db.query(`SELECT * FROM role`, (err, roles) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      const roleChoices = roles.map((role) => {
+        return {
+          name: role.title,
+          value: role.id,
+        };
+      });
+
+      inquire
+        .prompt([
+          {
+            type: "list",
+            name: "employeeId",
+            message: "Select the employee to update:",
+            choices: employeeChoices,
+          },
+          {
+            type: "list",
+            name: "roleId",
+            message: "Select the new role for the employee:",
+            choices: roleChoices,
+          },
+        ])
+        .then((data) => {
+          const sqlQuery = "UPDATE employee SET role_id = ? WHERE id = ?";
+          const params = [data.roleId, data.employeeId];
+
+          db.query(sqlQuery, params, (err, result) => {
+            if (err) {
+              console.error(err);
+            } else {
+              console.log("Employee role updated successfully!");
+            }
+
+            init();
+          });
+        })
+        .catch((error) => {
+          console.log("An error occurred:", error);
+        });
+    });
+  });
+};

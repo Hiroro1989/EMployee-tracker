@@ -29,6 +29,7 @@ const init = () => {
           "Add a Department",
           "Add a Role",
           "Add an Employee",
+          "Update Employee Role",
           "Quit",
         ],
       },
@@ -54,6 +55,13 @@ const init = () => {
         case "Add a Role":
             addSqlRL();
             break;
+        
+        case "Add an Employee":
+            addSqlEM();
+            break;
+        case "Update Employee Role":
+            updateSqlRL();
+            break;
 
         case "Quit":
           console.log("Exiting the program....");
@@ -77,7 +85,7 @@ const showSqlDP = () => {
     init();
   });
 };
-
+//showing role
 const showSqlRL = () => {
   db.query(
     `SELECT role.id, role.title, department.name, role.salary FROM role INNER JOIN department ON department.id = role.department_id`,
@@ -91,7 +99,7 @@ const showSqlRL = () => {
     }
   );
 };
-
+//showing employee
 const showSqlEM = () => {
   db.query(
     `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name," ",m.last_name) AS manager FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON department.id = role.department_id LEFT JOIN employee m ON m.id = employee.manager_id;`,
@@ -106,6 +114,7 @@ const showSqlEM = () => {
   );
 };
 
+//adding department
 const addSqlDP = () => {
     inquire.prompt([
         {
@@ -127,58 +136,200 @@ const addSqlDP = () => {
     })
 };
 
+//adding role
 const addSqlRL = () => {
-    let departmentChoices;
-    db.query(`SELECT * FROM department`, (err, departments)=>{
-        if(err) console.log(err);
-        // console.log("Departments:", departments);
-        departmentChoices = departments.map((department)=>{
-            return {
-                name: department.name,
-                value: department.id,
-            }
-                
-        })
-        console.log("Department Choices:", departmentChoices);
-    })
-    
-            // console.log("Department Choices:", departmentChoices);
-
-    
-    inquire.prompt([
-        {
+    db.query(`SELECT * FROM department`, (err, departments) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+  
+      const departmentChoices = departments.map((department) => {
+        return {
+          name: department.name,
+          value: department.id,
+        };
+      });
+  
+      inquire
+        .prompt([
+          {
             type: "input",
             name: "newRole",
-            message: "What is the name of the role?"
-        },
-        {
+            message: "What is the name of the role?",
+          },
+          {
             type: "input",
             name: "newSalary",
-            message: "What is the salary of the role?"
-        },
-        {
+            message: "What is the salary of the role?",
+          },
+          {
             type: "list",
             name: "newRoleBelong",
             message: "Which department does the role belong to?",
             choices: departmentChoices,
-        }
-    ]).then((data)=>{
-        const sqlQuery =
-          "INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)";
-        const params = [
-          data.newRole,
-          data.newSalary,
-          data.newRoleBelong,
-        ];
-        db.query(sqlQuery, params, (err, result)=>{
-            if (result){
-                console.log("Successfully added!");
-            }else{
-                console.error(err);
+          },
+        ])
+        .then((data) => {
+          const sqlQuery =
+            "INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)";
+          const params = [data.newRole, data.newSalary, data.newRoleBelong];
+  
+          db.query(sqlQuery, params, (err, result) => {
+            if (err) {
+              console.error(err);
+            } else {
+              console.log("Successfully added!");
             }
-            init(); 
+  
+            init();
+          });
         })
-            
-    })
-}
+        .catch((error) => {
+          console.log("An error occurred:", error);
+        });
+    });
+  };
+
+const addSqlEM = () => {
+    db.query(`SELECT * FROM role`, (err, roles) => {
+        if (err) {
+            console.log(err);
+            return;
+        }
+
+        const rolesChoice = roles.map((role) => {
+            return {
+                name: role.title,
+                value: role.id,
+            };
+        });
+
+        db.query(`SELECT * FROM employee`, (err, employees) => {
+            if (err) {
+                console.log(err);
+                return;
+            }
+
+            const managerChoice = employees.map((employee) => {
+                return {
+                    name: employee.first_name + " " + employee.last_name,
+                    value: employee.id,
+                };
+            });
+
+            managerChoice.unshift({ name: "None", value: null });
+
+            inquire.prompt([
+                {
+                    type: "input",
+                    name: "newFirstName",
+                    message: "What is the employee's first name?"
+                },
+                {
+                    type: "input",
+                    name: "newLastName",
+                    message: "What is the employee's last name?"
+                },
+                {
+                    type: "list",
+                    name: "newRole",
+                    message: "What is the employee's role?",
+                    choices: rolesChoice
+                },
+                {
+                    type: "list",
+                    name: "manager",
+                    message: "Who is the employee's manager?",
+                    choices: managerChoice
+                }
+            ])
+            .then((data) => {
+                const sqlQuery = "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)";
+                const params = [
+                    data.newFirstName,
+                    data.newLastName,
+                    data.newRole,
+                    data.manager
+                ];
+                db.query(sqlQuery, params, (err, result) => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        console.log("Successfully added!");
+                    }
+                    init();
+                });
+            })
+            .catch((error) => {
+                console.log("An error occurred:", error);
+            });
+        });
+    });
+};
+//updating role
+const updateSqlRL = () => {
+    db.query(`SELECT * FROM employee`, (err, employees) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+  
+      const employeeChoices = employees.map((employee) => {
+        return {
+          name: `${employee.first_name} ${employee.last_name}`,
+          value: employee.id,
+        };
+      });
+  
+      db.query(`SELECT * FROM role`, (err, roles) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
+  
+        const roleChoices = roles.map((role) => {
+          return {
+            name: role.title,
+            value: role.id,
+          };
+        });
+  
+        inquire
+          .prompt([
+            {
+              type: "list",
+              name: "employeeId",
+              message: "Select the employee to update:",
+              choices: employeeChoices,
+            },
+            {
+              type: "list",
+              name: "roleId",
+              message: "Select the new role for the employee:",
+              choices: roleChoices,
+            },
+          ])
+          .then((data) => {
+            const sqlQuery = "UPDATE employee SET role_id = ? WHERE id = ?";
+            const params = [data.roleId, data.employeeId];
+  
+            db.query(sqlQuery, params, (err, result) => {
+              if (err) {
+                console.error(err);
+              } else {
+                console.log("Employee role updated successfully!");
+              }
+  
+              init();
+            });
+          })
+          .catch((error) => {
+            console.log("An error occurred:", error);
+          });
+      });
+    });
+  };
+
+  
 init();
