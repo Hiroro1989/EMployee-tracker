@@ -116,7 +116,6 @@ const addSqlDP = () => {
     ])
     .then((data)=>{
         const sqlQuery = `INSERT INTO department (name) VALUE ("${data.newDepartment}")`;
-        // const params = [data.newDepatment];
         db.query(sqlQuery, (err, result) =>{
             if (result){
                 console.log("Successfully added!");
@@ -129,6 +128,23 @@ const addSqlDP = () => {
 };
 
 const addSqlRL = () => {
+    let departmentChoices;
+    db.query(`SELECT * FROM department`, (err, departments)=>{
+        if(err) console.log(err);
+        // console.log("Departments:", departments);
+        departmentChoices = departments.map((department)=>{
+            return {
+                name: department.name,
+                value: department.id,
+            }
+                
+        })
+        console.log("Department Choices:", departmentChoices);
+    })
+    
+            // console.log("Department Choices:", departmentChoices);
+
+    
     inquire.prompt([
         {
             type: "input",
@@ -144,19 +160,25 @@ const addSqlRL = () => {
             type: "list",
             name: "newRoleBelong",
             message: "Which department does the role belong to?",
-            // choices: need to add 
+            choices: departmentChoices,
         }
     ]).then((data)=>{
-        const sqlQuery = `INSERT INTO role (title, salary, department_id) VALUE ("${data.newRole}, ${data.newSalary},${list[data.newRoleBelong]}")`;
-        db.query(sqlQuery, (err, result) =>{
+        const sqlQuery =
+          "INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)";
+        const params = [
+          data.newRole,
+          data.newSalary,
+          data.newRoleBelong,
+        ];
+        db.query(sqlQuery, params, (err, result)=>{
             if (result){
                 console.log("Successfully added!");
             }else{
                 console.error(err);
             }
-            init();
+            init(); 
         })
+            
     })
 }
-
 init();
