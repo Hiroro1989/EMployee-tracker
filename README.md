@@ -8,7 +8,7 @@ The Employee trakcer is a command-line application that allows you to manage dep
 - [Usage](#usage)
 - [Features](#features)
 - [Technologies](#technologies)
-- [Demo and Screenshots](#Demo and Screenshots)
+- [Demo](#Demo)
 
 ## Installation
 
@@ -61,7 +61,7 @@ node index.js
 - mysql2
 - console.table
 
-## Demo and Screenshots
+## Demo
 
 [Demo Video](https://drive.google.com/file/d/1XPeblG11EH_ngPA0ObIU1zALoAO6NuJL/view)
 
