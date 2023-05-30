@@ -8,6 +8,7 @@ The Employee trakcer is a command-line application that allows you to manage dep
 - [Usage](#usage)
 - [Features](#features)
 - [Technologies](#technologies)
+- [Demo and Screenshots](#Demo and Screenshots)
 
 ## Installation
 
